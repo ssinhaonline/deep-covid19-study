@@ -57,8 +57,8 @@ shinyUI(fluidPage(
                  mainPanel(
                      tabsetPanel(
                          type = "tabs",
-                         tabPanel("Head To Head", plotlyOutput("headToHead"))
-                         # tabPanel("Similarity", plotlyOutput("Similarity"))
+                         tabPanel("Head To Head", plotlyOutput("headToHead")),
+                         tabPanel("Similarity", plotlyOutput("similarity"))
                      )
                  )
             )

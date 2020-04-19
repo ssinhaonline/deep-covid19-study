@@ -268,4 +268,44 @@ function(input, output, session) {
         }
         plt
     })
+    
+    output$similarity = renderPlotly({
+        comparisonsData = comparisonsData()
+        regionPairs = list(c(input$comparisonsCountry1, input$comparisonsState1), 
+                           c(input$comparisonsCountry2, input$comparisonsState2))
+        
+        corrInput <- list()
+        for(pair in regionPairs) {
+            thisRegionData = comparisonsData %>% 
+                filter(`Country/Region` == pair[1] & 
+                           `Province/State` == pair[2])
+            corrInput[[paste(pair[1], pair[2], sep = "-")]] = thisRegionData %>% 
+                pull(if_else(input$comparisonsMetrics == "Confirmed", RMConfirmed, 
+                             if_else(input$comparisonsMetrics == "Day/Day Change", RMChange, RMCP)))
+        }
+        corrInput = bind_cols(lapply(corrInput, `length<-`, max(lengths(corrInput))))      
+        corrOutput = cor(corrInput, method = c("pearson"), use = c("complete.obs"))
+        corrOutput[!upper.tri(corrOutput, diag = TRUE)] <- NA
+        
+        plot_ly(x = colnames(corrOutput), 
+                y = rownames(corrOutput),
+                z = corrOutput,
+                type = "heatmap",
+                colorscale = "Blues",
+                zmin = -1,
+                zmax = 1,
+                zmid = 0,
+                zauto = FALSE
+                ) %>% 
+            config(displayModeBar=TRUE) %>%
+            layout(
+                xaxis=list(
+                    title = "Regions" 
+                ), 
+                yaxis=list(
+                    title="Regions"
+                ),
+                showlegend = TRUE
+            )
+    })
 }
