@@ -112,7 +112,9 @@ function(input, output, session) {
                                                as.numeric(date - FirstConfirmed), 
                                                -999999)) %>% 
             filter(DaysSinceOutBreak >= 0) %>% 
-            mutate(RollingMeanConfirmed = rollmeanr(CumConfirmed, 2, fill = NA))
+            mutate(RMConfirmed = rollmeanr(CumConfirmed, 2, fill = NA),
+                   RMChange = RMConfirmed - lag(RMConfirmed), 
+                   RMCP = 100.0 * RMChange/lag(RMConfirmed))
     })
     
     observeEvent(input$regionsCountry, {
@@ -258,7 +260,8 @@ function(input, output, session) {
                 x = thisRegionData %>% 
                     pull(DaysSinceOutBreak), 
                 y = thisRegionData %>% 
-                    pull(RollingMeanConfirmed),
+                    pull(if_else(input$comparisonsMetrics == "Confirmed", RMConfirmed, 
+                                 if_else(input$comparisonsMetrics == "Day/Day Change", RMChange, RMCP))),
                 fill = "tozeroy",
                 name = paste(pair[1], pair[2], sep = " - ")
             )

@@ -2,14 +2,17 @@ library(shiny)
 library(plotly)
 
 shinyUI(fluidPage(
-    # tags$head(includeHTML("google-analytics.html")),
-    tags$style(
-        type='text/css', 
-        ".selectize-input { font-family: Calibri, monospace; } .selectize-dropdown { font-family: Calibri, monospace; }"
-    ),
-    tags$style(HTML(
-        "body { font-family: Calibri, monospace; line-height: 1.1; }"
-    )),
+    tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.0/js/bootstrap.js"),
+    tags$footer(HTML("<hr>Thanks to Meinhard Ploner for his brilliant article on 
+    <a href=\"https://towardsdatascience.com/create-a-coronavirus-app-using-r-shiny-and-plotly-6a6abf66091d\">TowardsDataScience</a> 
+    explaining the various parts of this application.<br> Check out the full code on 
+    <a href=\"https://github.com/ssinhaonline/deep-covid19-study\">Github</a>."), align = "center", style = "position:absolute;
+                                                                    bottom:0;
+                                                                    width:100%;
+                                                                    height:50px; /* Height of the footer */
+                                                                    color: black;
+                                                                    background-color: white;
+                                                                    z-index: 1000;"),
     titlePanel("Case History of the Coronavirus (COVID-19)"),
     tabsetPanel(
         type = "tabs",
@@ -44,9 +47,9 @@ shinyUI(fluidPage(
                      selectizeInput("comparisonsState2", label=h5("State / Province"), choices=NULL, width="100%"),
                      # actionButton("addRegion", "Add Region"),
                      # uiOutput("moreRegions"),
-                     checkboxGroupInput(
-                         "comparisonsMetrics", label=h5("Selected Metrics"), 
-                         choices=c("Confirmed"), 
+                     radioButtons(
+                         "comparisonsMetrics", label=h5("Selected Metrics (Rolling Mean)"), 
+                         choices=c("Confirmed", "Day/Day Change", "Day/Day Change %"), 
                          selected=c("Confirmed"), 
                          width="100%"
                      )
@@ -59,7 +62,6 @@ shinyUI(fluidPage(
                      )
                  )
             )
-        ),
-    HTML("<hr>Thanks to Meinhard Ploner for his brilliant article on <a href=\"https://towardsdatascience.com/create-a-coronavirus-app-using-r-shiny-and-plotly-6a6abf66091d\">TowardsDataScience</a> explaining the various parts of this application.<br> Check out the full code on <a href=\"https://github.com/ssinhaonline/deep-covid19-study\">Github</a>.")
+        )
     )
 )
