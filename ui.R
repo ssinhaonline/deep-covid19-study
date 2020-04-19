@@ -42,7 +42,7 @@ shinyUI(fluidPage(
                      h3(strong("Select Region 2")),
                      selectizeInput("comparisonsCountry2", label=h5("Country"), choices=NULL, width="100%"),
                      selectizeInput("comparisonsState2", label=h5("State / Province"), choices=NULL, width="100%"),
-                     # actionButton("addRegion", "Add Another Region"),
+                     # actionButton("addRegion", "Add Region"),
                      # uiOutput("moreRegions"),
                      checkboxGroupInput(
                          "comparisonsMetrics", label=h5("Selected Metrics"), 

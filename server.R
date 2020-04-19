@@ -65,34 +65,48 @@ function(input, output, session) {
     comparisonsData = reactive({
         d = allData %>%
             filter(`Country/Region` %in% c(input$comparisonsCountry1, input$comparisonsCountry2))
-        if(input$comparisonsState1 != "<all>" || input$comparisonsState2 != "<all>") {
-            if (input$comparisonsState1 != "<all>"){
-                d = d %>% 
-                    filter(`Province/State` == input$comparisonsState1) 
-            } else {
-                if (input$comparisonsState2 != "<all>"){
-                    d = d %>% 
-                        filter(`Province/State` == input$comparisonsState2) 
-                }
-            }
-        }  else {
+        if(input$comparisonsState1 == "<all>") {
             d = d %>% 
-                group_by(`Country/Region`, date) %>% 
-                summarise(CumConfirmed = sum(CumConfirmed), 
-                          CumDeaths = sum(CumDeaths), 
-                          CumRecovered = sum(CumRecovered))
+                mutate(`Province/State` = if_else(`Country/Region` == input$comparisonsCountry1, "<all>", `Province/State`))
+        } else {
+            d = d %>% 
+                filter(!(`Country/Region` == input$comparisonsCountry1 & 
+                             `Province/State` != input$comparisonsState1))
         }
         
+        if(input$comparisonsState2 == "<all>") {
+            d = d %>% 
+                mutate(`Province/State` = if_else(`Country/Region` == input$comparisonsCountry2, "<all>", `Province/State`))
+        } else {
+            d = d %>% 
+                filter(!(`Country/Region` == input$comparisonsCountry2 & 
+                             `Province/State` != input$comparisonsState2))
+        }
+        
+        # if(input$comparisonsState1 != "<all>" || input$comparisonsState2 != "<all>") {
+        #     if (input$comparisonsState1 != "<all>"){
+        #         d = d %>% 
+        #             filter(`Province/State` == input$comparisonsState1) 
+        #     } else {
+        #         if (input$comparisonsState2 != "<all>"){
+        #             d = d %>% 
+        #                 filter(`Province/State` == input$comparisonsState2) 
+        #         }
+        #     }
+        # }  else {
+        #     d = d %>% 
+        #         group_by(`Country/Region`, date) %>% 
+        #         summarise(CumConfirmed = sum(CumConfirmed), 
+        #                   CumDeaths = sum(CumDeaths), 
+        #                   CumRecovered = sum(CumRecovered))
+        # }
+        
         d %>%
-            mutate(dateStr = format(date, format="%b %d, %Y"),    # Jan 20, 2020
-                   NewConfirmed=CumConfirmed - lag(CumConfirmed, default=0),
-                   NewRecovered=CumRecovered - lag(CumRecovered, default=0),
-                   NewDeaths=CumDeaths - lag(CumDeaths, default=0)) %>% 
-            group_by(`Country/Region`, date) %>% 
+            group_by(`Country/Region`, `Province/State`, date) %>%
             summarise(CumConfirmed = sum(CumConfirmed), 
                       CumDeaths = sum(CumDeaths), 
                       CumRecovered = sum(CumRecovered)) %>% 
-            arrange(`Country/Region`, date) %>% 
+            arrange(`Country/Region`, `Province/State`, date) %>% 
             mutate(FirstConfirmed = first(date[CumConfirmed >= 1])) %>% 
             mutate(DaysSinceOutBreak = if_else(as.numeric(date - FirstConfirmed) >= 0, 
                                                as.numeric(date - FirstConfirmed), 
@@ -111,27 +125,28 @@ function(input, output, session) {
     
     observeEvent(input$comparisonsCountry1, {
         states = allData %>%
-            filter(`Country/Region` == input$comparisonsCountry1) %>% 
+            filter(`Country/Region` == input$comparisonsCountry1) %>%
             pull(`Province/State`)
         states = c("<all>", sort(unique(states)))
-        updateSelectInput(session, "comparisonsState1", choices=states[1], selected=states[1])
+        updateSelectInput(session, "comparisonsState1", choices=states, selected=states[1])
     })
-    
+
     observeEvent(input$comparisonsCountry2, {
         states = allData %>%
-            filter(`Country/Region` == input$comparisonsCountry2) %>% 
+            filter(`Country/Region` == input$comparisonsCountry2) %>%
             pull(`Province/State`)
         states = c("<all>", sort(unique(states)))
-        updateSelectInput(session, "comparisonsState2", choices=states[1], selected=states[1])
+        updateSelectInput(session, "comparisonsState2", choices=states, selected=states[1])
     })
-    
+
+    # Not great logic, no need to look into this short term
     # observeEvent(input$comparisonsState1, {
     #     if (input$comparisonsState1 == "<all>"){
     #         countries = sort(unique(allData$`Country/Region`))
-    #         updateSelectInput(session, "comparisonsCountry2", 
+    #         updateSelectInput(session, "comparisonsCountry2",
     #                           choices = countries[!countries == input$comparisonsCountry1])
     #         states = allData %>%
-    #             filter(`Country/Region` == input$comparisonsCountry2) %>% 
+    #             filter(`Country/Region` == input$comparisonsCountry2) %>%
     #             pull(`Province/State`)
     #         states = c("<all>", sort(unique(states)))
     #         updateSelectInput(session, "comparisonsState2", choices=states, selected=states[1])
@@ -146,26 +161,28 @@ function(input, output, session) {
     
     # observeEvent(input$addRegion, {
     #     numRegions = numRegions + 1
-    #     output$moreRegions = renderUI({
-    #         # opTag = tagList()
-    #         tagList(
-    #             h3(strong(paste0("Select Region ", as.character(numRegions)))),
-    #             selectizeInput(ns("country"), paste0("comparisonsCountry", as.character(numRegions)), label=h5("Country"), choices=NULL, width="100%"),
-    #             selectizeInput(ns("state"), paste0("comparisonsState", as.character(numRegions)), label=h5("State / Province"), choices=NULL, width="100%")
-    #         )
-    #         # tagAppendChild(opTag, h3(strong(paste0("Select Region ", as.character(numRegions)))))
-    #         # tagAppendChild(opTag, selectizeInput(paste0("comparisonsCountry", as.character(numRegions)), label=h5("Country"), choices=NULL, width="100%"))
-    #         # tagAppendChild(opTag, selectizeInput(paste0("comparisonsState", as.character(numRegions)), label=h5("State / Province"), choices=NULL, width="100%"))
-    #         # opTag
-    #     })
-    #     updateSelectInput(session, paste0("comparisonsCountry", as.character(numRegions)), choices=countries, selected="US")
     #     states = allData %>%
-    #         filter(`Country/Region` == input[[paste0("comparisonsCountry", as.character(numRegions))]]) %>% 
+    #         filter(`Country/Region` == "US") %>%
     #         pull(`Province/State`)
     #     states = c("<all>", sort(unique(states)))
-    #     updateSelectInput(session, paste0("comparisonsState", as.character(numRegions)), choices=states[1], selected=states[1])
+    #     output$moreRegions = renderUI({
+    #         # opTag = tagList()
+    #         ns = NS(numRegions)
+    #         tagList(
+    #             h3(strong(paste0("Select Region ", as.character(numRegions)))),
+    #             selectizeInput(ns("comparisonsCountry"), paste0("comparisonsCountry", as.character(numRegions)), label=h5("Country"), choices = countries, width="100%"),
+    #             selectizeInput(ns("comparisonsState"), paste0("comparisonsState", as.character(numRegions)), label=h5("State / Province"), choices = states, width="100%"),
+    #         )
+    #     })
     # })
-    
+    # 
+    # observeEvent(input$comparisonsCountry, {
+    #     states = allData %>%
+    #         filter(`Country/Region` == input$comparisonsCountry) %>%
+    #         pull(`Province/State`)
+    #     states = c("<all>", sort(unique(states)))
+    #     updateSelectInput(session, "comparisonsState", choices = states, selected = states[1])
+    # })
     
     
     renderBarPlot = function(varPrefix, legendPrefix, yaxisTitle) {
@@ -210,13 +227,17 @@ function(input, output, session) {
             config(displayModeBar=FALSE) %>%
             layout(
                 xaxis=list(
-                    title="Days Since Outbreak", 
-                    tickangle=-90, 
+                    title = "Days Since Outbreak", 
+                    tickmode = "linear",
+                    tick0 = 0,
+                    dtick = 5,
                     tickvals=as.list(union(comparisonsData %>% 
-                                               filter(`Country/Region` == input$comparisonsCountry1) %>%
+                                               filter(`Country/Region` == input$comparisonsCountry1 & 
+                                                          `Province/State` == input$comparisonsState1) %>%
                                                pull(DaysSinceOutBreak), 
                                            comparisonsData %>% 
-                                               filter(`Country/Region` == input$comparisonsCountry2) %>% 
+                                               filter(`Country/Region` == input$comparisonsCountry2 & 
+                                                          `Province/State` == input$comparisonsState2) %>% 
                                                pull(DaysSinceOutBreak))), 
                     gridwidth=1), 
                 yaxis=list(
@@ -225,18 +246,21 @@ function(input, output, session) {
                 legend=list(x=0.05, y=0.95, font=list(size=15), bgcolor='rgba(240,240,240,0.5)'),
                 font=f1
             )
-        for(country in c(input$comparisonsCountry1, input$comparisonsCountry2)) {
-            countryData = comparisonsData %>% 
-            filter(`Country/Region` == country)
+        regionPairs = list(c(input$comparisonsCountry1, input$comparisonsState1), 
+                           c(input$comparisonsCountry2, input$comparisonsState2))
+        for(pair in regionPairs) {
+            thisRegionData = comparisonsData %>% 
+                filter(`Country/Region` == pair[1] & 
+                           `Province/State` == pair[2])
             
             plt = plt %>%
             add_trace(
-                x = countryData %>% 
+                x = thisRegionData %>% 
                     pull(DaysSinceOutBreak), 
-                y = countryData %>% 
+                y = thisRegionData %>% 
                     pull(RollingMeanConfirmed),
                 fill = "tozeroy",
-                name = country
+                name = paste(pair[1], pair[2], sep = " - ")
             )
         }
         plt
